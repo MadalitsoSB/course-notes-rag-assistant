@@ -1,18 +1,19 @@
 """
-Course Notes RAG Assistant - BSE2201 group project (SKELETON)
+Course Notes RAG Assistant - BSE2201 team project (SKELETON)
 
-Run:  streamlit run app.py
-Setup: pip install -r requirements.txt, then put your API key in a .env file.
+Run:   streamlit run app.py
+Setup: pip install -r requirements.txt, then put GEMINI_API_KEY=your-key in a .env file.
 
-THE AGREED CONTRACT (do not change these names or return shapes without telling the group)
+THE AGREED CONTRACT (do not change these names or return shapes without telling the team)
 
-    load_documents(folder)               -> list of {"source": str, "text": str}
-    split_into_chunks(documents)         -> list of {"id": str, "source": str, "text": str}
-    build_vector_store(chunks)           -> a Chroma collection
-    retrieve(question, collection, k)    -> list of {"source": str, "text": str}
+    load_documents(folder)                -> list of {"source": str, "text": str}
+    split_into_chunks(documents)          -> list of {"id": str, "source": str, "text": str}
+    build_vector_store(chunks)            -> a Chroma collection
+    retrieve(question, collection, k)     -> list of {"source": str, "text": str}
     answer_question(question, collection) -> {"answer": str, "sources": list[str]}
 
-Work ONLY inside your own section. Replace each TODO and the `raise NotImplementedError` line.
+Work ONLY inside your own section, on your own branch. Replace each TODO and the
+`raise NotImplementedError` line.
 """
 
 import os
@@ -21,10 +22,10 @@ import chromadb
 import streamlit as st
 from dotenv import load_dotenv
 
-load_dotenv()  # reads API key from .env (never commit .env to GitHub)
+load_dotenv()  # reads the API key from .env (never commit .env to GitHub)
 
 # ---------------------------------------------------------------------------
-# SETTINGS (shared - agree on changes in the group chat)
+# SETTINGS (shared - agree on changes in the team chat)
 # ---------------------------------------------------------------------------
 NOTES_FOLDER = "notes"   # put the course notes (.pdf / .txt) here
 CHUNK_SIZE = 500         # characters per chunk
@@ -93,8 +94,8 @@ def build_prompt(question: str, chunks: list[dict]) -> str:
 
 
 def call_llm(prompt: str) -> str:
-    """Send the prompt to the language model (Gemini or Claude) and return the text reply."""
-    # TODO (Madalitso): read the key with os.getenv("API_KEY"), call the API
+    """Send the prompt to Gemini and return the text reply."""
+    # TODO (Madalitso): read the key with os.getenv("GEMINI_API_KEY"), call the API
     raise NotImplementedError
 
 
@@ -134,9 +135,13 @@ def show_sources(sources: list[str]):
 
 
 def show_upload():
-    """LANZI: let the user upload extra notes into the NOTES_FOLDER."""
-    # TODO (Lanzi): st.file_uploader, save to NOTES_FOLDER, then clear the cache
+    """NATHAN N: let the user upload extra notes into the NOTES_FOLDER."""
+    # TODO (Nathan N): st.file_uploader, save to NOTES_FOLDER, then clear the cache
     pass
+
+
+# NATHAN N: also add error messages and a loading spinner (st.spinner)
+# around answer_question, e.g. inside show_chat (agree the details with Wesley).
 
 
 def main():
