@@ -112,29 +112,41 @@ def retrieve(question: str, collection, k: int = TOP_K) -> list[dict]:
 # SECTION 3 - MADALITSO: answer generation and wiring
 # ===========================================================================
 def build_prompt(question: str, chunks: list[dict]) -> str:
-    """Build the prompt: instructions + retrieved chunks + the question.
+MODEL = "gemini-3.5-flash"  # change if AI Studio lists a different name
 
-    The instructions must say: answer ONLY from the context, and say
-    "I could not find this in the notes" if the answer is not there.
-    """
-    # TODO (Madalitso)
-    raise NotImplementedError
+
+def build_prompt(question: str, chunks: list[dict]) -> str:
+    context = "\n\n".join(
+        f"[Source: {c['source']}]\n{c['text']}" for c in chunks
+    )
+    return (
+        "You are a course notes assistant. Answer the question using ONLY "
+        "the context below. If the answer is not in the context, reply exactly: "
+        "I could not find this in the notes.\n\n"
+        f"CONTEXT:\n{context}\n\n"
+        f"QUESTION: {question}"
+    )
 
 
 def call_llm(prompt: str) -> str:
-    """Send the prompt to Gemini and return the text reply."""
-    # TODO (Madalitso): read the key with os.getenv("GEMINI_API_KEY"), call the API
-    raise NotImplementedError
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        return "Error: GEMINI_API_KEY is missing. Add it to your .env file."
+    try:
+        client = genai.Client(api_key=api_key)
+        response = client.models.generate_content(model=MODEL, contents=prompt)
+        return response.text or "The model returned an empty reply."
+    except Exception as e:
+        return f"Error calling Gemini: {e}"
 
 
 def answer_question(question: str, collection) -> dict:
-    """The main function the front end calls.
-
-    Return {"answer": "...", "sources": ["week1.pdf", "week3.pdf"]}
-    """
-    # TODO (Madalitso): retrieve -> build_prompt -> call_llm -> package the result
-    raise NotImplementedError
-
+    chunks = retrieve(question, collection)
+    if not chunks:
+        return {"answer": "I could not find this in the notes.", "sources": []}
+    answer = call_llm(build_prompt(question, chunks))
+    sources = sorted({c["source"] for c in chunks})
+    return {"answer": answer, "sources": sources}
 
 # ===========================================================================
 # SECTION 4 - FRONT END (Streamlit)
