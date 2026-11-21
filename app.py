@@ -76,8 +76,36 @@ def retrieve(question: str, collection, k: int = TOP_K) -> list[dict]:
     Hint: collection.query(query_texts=[question], n_results=k)
     Extra: try different k values and note which gives the best answers (for the slides).
     """
-    # TODO (Rapheal)
-    raise NotImplementedError
+    
+def retrieve(question: str, collection, k: int = TOP_K) -> list[dict]:
+    """Return the k chunks most similar to the question.
+
+    Return [{"source": "week1.pdf", "text": "..."}, ...]
+    """
+
+    # Search ChromaDB for the most relevant chunks
+    results = collection.query(
+        query_texts=[question],
+        n_results=k
+    )
+
+    # Prepare an empty list to store retrieved chunks
+    retrieved_chunks = []
+
+    # Extract documents and their metadata
+    documents = results["documents"][0]
+    metadatas = results["metadatas"][0]
+
+    # Combine each document with its source filename
+    for text, metadata in zip(documents, metadatas):
+        retrieved_chunks.append({
+            "source": metadata["source"],
+            "text": text
+        })
+
+    # Return the retrieved chunks
+    return retrieved_chunks
+
 
 
 # ===========================================================================
