@@ -15,14 +15,15 @@ THE AGREED CONTRACT (do not change these names or return shapes without telling 
 Work ONLY inside your own section, on your own branch. Replace each TODO and the
 `raise NotImplementedError` line.
 """
-
+ 
 import os
 
 import chromadb
 import streamlit as st
 from dotenv import load_dotenv
+from google import genai
 
-load_dotenv()  # reads the API key from .env (never commit .env to GitHub)
+load_dotenv()
 
 # ---------------------------------------------------------------------------
 # SETTINGS (shared - agree on changes in the team chat)
@@ -111,8 +112,9 @@ def retrieve(question: str, collection, k: int = TOP_K) -> list[dict]:
 # ===========================================================================
 # SECTION 3 - MADALITSO: answer generation and wiring
 # ===========================================================================
-def build_prompt(question: str, chunks: list[dict]) -> str:
-MODEL = "gemini-3.5-flash"  # change if AI Studio lists a different name
+MODEL = "gemini-flash-latest"
+
+NOT_FOUND = "I could not find this in the notes."
 
 
 def build_prompt(question: str, chunks: list[dict]) -> str:
@@ -122,18 +124,17 @@ def build_prompt(question: str, chunks: list[dict]) -> str:
     return (
         "You are a course notes assistant. Answer the question using ONLY "
         "the context below. If the answer is not in the context, reply exactly: "
-        "I could not find this in the notes.\n\n"
+        f"{NOT_FOUND}\n\n"
         f"CONTEXT:\n{context}\n\n"
         f"QUESTION: {question}"
     )
 
 
 def call_llm(prompt: str) -> str:
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
+    if not os.getenv("GEMINI_API_KEY"):
         return "Error: GEMINI_API_KEY is missing. Add it to your .env file."
     try:
-        client = genai.Client(api_key=api_key)
+        client = genai.Client()
         response = client.models.generate_content(model=MODEL, contents=prompt)
         return response.text or "The model returned an empty reply."
     except Exception as e:
@@ -143,8 +144,13 @@ def call_llm(prompt: str) -> str:
 def answer_question(question: str, collection) -> dict:
     chunks = retrieve(question, collection)
     if not chunks:
-        return {"answer": "I could not find this in the notes.", "sources": []}
+        return {"answer": NOT_FOUND, "sources": []}
     answer = call_llm(build_prompt(question, chunks))
+    if answer.startswith("Error"):
+        return {"answer": answer, "sources": []}
+    # If the model says it found nothing, don't list files that didn't help
+    if answer.strip().lower().startswith(NOT_FOUND.lower().rstrip(".")):
+        return {"answer": answer, "sources": []}
     sources = sorted({c["source"] for c in chunks})
     return {"answer": answer, "sources": sources}
 
