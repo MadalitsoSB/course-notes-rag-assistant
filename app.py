@@ -157,9 +157,28 @@ def show_chat(collection):
 
 
 def show_sources(sources: list[str]):
-    """LANZI: show which documents the answer came from (e.g. in an expander)."""
-    # TODO (Lanzi)
-    pass
+    """LANZI: show which documents the answer came from (e.g. in an expander).
+
+    `sources` is the "sources" list from answer_question(), for example
+    ["week1.pdf", "week3.pdf"]. Call this right after showing an answer.
+    """
+    # Clean the list: skip empty names and repeats (several retrieved chunks
+    # often come from the same file), but keep the order they came in.
+    unique_sources = []
+    for name in sources or []:
+        name = str(name).strip()
+        if name and name not in unique_sources:
+            unique_sources.append(name)
+
+    if not unique_sources:
+        st.caption("No sources: this answer did not come from the notes.")
+        return
+
+    label = "Source" if len(unique_sources) == 1 else "Sources"
+    with st.expander(f"📚 {label} ({len(unique_sources)})"):
+        st.caption("This answer was built from these files in the notes folder:")
+        for name in unique_sources:
+            st.markdown(f"- 📄 `{name}`")
 
 
 def show_upload():
