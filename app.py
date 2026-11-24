@@ -135,10 +135,49 @@ def show_sources(sources: list[str]):
 
 
 def show_upload():
-    """NATHAN N: let the user upload extra notes into the NOTES_FOLDER."""
-    # TODO (Nathan N): st.file_uploader, save to NOTES_FOLDER, then clear the cache
-    pass
+    """NATHAN N: allow users to upload PDF and TXT course notes."""
 
+    st.subheader("📚 Upload Course Notes")
+
+    uploaded_files = st.file_uploader(
+        "Choose your course notes",
+        type=["pdf", "txt"],
+        accept_multiple_files=True
+    )
+
+    if uploaded_files:
+
+        os.makedirs(NOTES_FOLDER, exist_ok=True)
+
+        if st.button("Upload Notes"):
+
+            successful_uploads = 0
+
+            for uploaded_file in uploaded_files:
+
+                try:
+                    file_path = os.path.join(
+                        NOTES_FOLDER,
+                        uploaded_file.name
+                    )
+
+                    with open(file_path, "wb") as file:
+                        file.write(uploaded_file.getbuffer())
+
+                    successful_uploads += 1
+
+                except Exception as e:
+                    st.error(
+                        f"Could not upload {uploaded_file.name}: {e}"
+                    )
+
+            if successful_uploads > 0:
+                st.success(
+                    f"Successfully uploaded {successful_uploads} file(s)!"
+                )
+
+                st.cache_resource.clear()
+                st.rerun()
 
 # NATHAN N: also add error messages and a loading spinner (st.spinner)
 # around answer_question, e.g. inside show_chat (agree the details with Wesley).
