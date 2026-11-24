@@ -186,6 +186,7 @@ def show_sources(sources: list[str]):
             st.markdown(f"- 📄 `{name}`")
 
 
+
 def show_upload():
     """NATHAN N: allow users to upload PDF and TXT course notes."""
 
@@ -198,30 +199,41 @@ def show_upload():
     )
 
     if uploaded_files:
-
         os.makedirs(NOTES_FOLDER, exist_ok=True)
 
         if st.button("Upload Notes"):
-
             successful_uploads = 0
 
-            for uploaded_file in uploaded_files:
+            with st.spinner("Uploading your course notes..."):
 
-                try:
-                    file_path = os.path.join(
-                        NOTES_FOLDER,
-                        uploaded_file.name
-                    )
+                for uploaded_file in uploaded_files:
+                    try:
+                        filename = os.path.basename(uploaded_file.name)
 
-                    with open(file_path, "wb") as file:
-                        file.write(uploaded_file.getbuffer())
+                        if not filename:
+                            st.error("Invalid filename.")
+                            continue
 
-                    successful_uploads += 1
+                        file_path = os.path.join(
+                            NOTES_FOLDER,
+                            filename
+                        )
 
-                except Exception as e:
-                    st.error(
-                        f"Could not upload {uploaded_file.name}: {e}"
-                    )
+                        if os.path.exists(file_path):
+                            st.warning(
+                                f"{filename} already exists. Skipping it."
+                            )
+                            continue
+
+                        with open(file_path, "wb") as file:
+                            file.write(uploaded_file.getbuffer())
+
+                        successful_uploads += 1
+
+                    except Exception as e:
+                        st.error(
+                            f"Could not upload {uploaded_file.name}: {e}"
+                        )
 
             if successful_uploads > 0:
                 st.success(
@@ -231,8 +243,9 @@ def show_upload():
                 st.cache_resource.clear()
                 st.rerun()
 
-# NATHAN N: also add error messages and a loading spinner (st.spinner)
-# around answer_question, e.g. inside show_chat (agree the details with Wesley).
+                # NATHAN N: also add error messages and a loading spinner (st.spinner)
+                # around answer_question, e.g. inside show_chat (agree the details with Wesley).
+
 
 
 def main():
