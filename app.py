@@ -157,8 +157,47 @@ def show_chat(collection):
 
     Hint: st.text_input, st.button, st.chat_message. Call answer_question().
     """
-    # TODO (Wesley)
-    st.info("Chat screen goes here.")
+   
+    # Store conversation history between Streamlit reruns
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = []
+
+    # Question input
+    with st.form("chat_form"):
+        question = st.text_input(
+            "Ask a question about your course notes:",
+            placeholder="e.g. What is an operating system?"
+        )
+        submitted = st.form_submit_button("Ask")
+
+    # Process submitted question
+    if submitted:
+        if not question.strip():
+            st.warning("Please enter a question first.")
+        else:
+            st.session_state.chat_history.append({
+                "role": "user",
+                "content": question.strip()
+            })
+
+            try:
+                with st.spinner("Searching your course notes..."):
+                    result = answer_question(question.strip(), collection)
+
+                answer = result["answer"]
+
+                st.session_state.chat_history.append({
+                    "role": "assistant",
+                    "content": answer
+                })
+
+            except Exception as e:
+                st.error(f"Something went wrong: {e}")
+
+    # Display conversation
+    for message in st.session_state.chat_history:
+        with st.chat_message(message["role"]):
+            st.write(message["content"])
 
 
 def show_sources(sources: list[str]):
@@ -187,6 +226,7 @@ def show_sources(sources: list[str]):
 
 
 
+
 def show_upload():
     """NATHAN N: allow users to upload PDF and TXT course notes."""
 
@@ -205,7 +245,6 @@ def show_upload():
             successful_uploads = 0
 
             with st.spinner("Uploading your course notes..."):
-
                 for uploaded_file in uploaded_files:
                     try:
                         filename = os.path.basename(uploaded_file.name)
@@ -239,22 +278,27 @@ def show_upload():
                 st.success(
                     f"Successfully uploaded {successful_uploads} file(s)!"
                 )
-
-                st.cache_resource.clear()
+                get_collection.clear()
                 st.rerun()
+
+
+def answer_with_feedback(question: str, collection) -> dict:
+    """NATHAN N: spinner and friendly error message around answer_question."""
+
+    try:
+        with st.spinner("Searching the notes..."):
+            return answer_question(question, collection)
+
+    except Exception as e:
+        st.error(f"Something went wrong while answering: {e}")
+
+        return {
+            "answer": "Sorry, I could not answer that. Please try again.",
+            "sources": []
+        }
+
 
                 # NATHAN N: also add error messages and a loading spinner (st.spinner)
                 # around answer_question, e.g. inside show_chat (agree the details with Wesley).
 
 
-
-def main():
-    st.title("Course Notes Assistant")
-    st.caption("Ask a question. Answers come only from our notes.")
-    collection = get_collection()
-    show_chat(collection)
-    show_upload()
-
-
-if __name__ == "__main__":
-    main()
