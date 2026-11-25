@@ -15,15 +15,14 @@ THE AGREED CONTRACT (do not change these names or return shapes without telling 
 Work ONLY inside your own section, on your own branch. Replace each TODO and the
 `raise NotImplementedError` line.
 """
- 
+
 import os
 
 import chromadb
 import streamlit as st
 from dotenv import load_dotenv
-from google import genai
 
-load_dotenv()
+load_dotenv()  # reads the API key from .env (never commit .env to GitHub)
 
 # ---------------------------------------------------------------------------
 # SETTINGS (shared - agree on changes in the team chat)
@@ -99,47 +98,30 @@ def retrieve(question: str, collection, k: int = TOP_K) -> list[dict]:
 # ===========================================================================
 # SECTION 3 - MADALITSO: answer generation and wiring
 # ===========================================================================
-MODEL = "gemini-flash-latest"
-
-NOT_FOUND = "I could not find this in the notes."
-
-
 def build_prompt(question: str, chunks: list[dict]) -> str:
-    context = "\n\n".join(
-        f"[Source: {c['source']}]\n{c['text']}" for c in chunks
-    )
-    return (
-        "You are a course notes assistant. Answer the question using ONLY "
-        "the context below. If the answer is not in the context, reply exactly: "
-        f"{NOT_FOUND}\n\n"
-        f"CONTEXT:\n{context}\n\n"
-        f"QUESTION: {question}"
-    )
+    """Build the prompt: instructions + retrieved chunks + the question.
+
+    The instructions must say: answer ONLY from the context, and say
+    "I could not find this in the notes" if the answer is not there.
+    """
+    # TODO (Madalitso)
+    raise NotImplementedError
 
 
 def call_llm(prompt: str) -> str:
-    if not os.getenv("GEMINI_API_KEY"):
-        return "Error: GEMINI_API_KEY is missing. Add it to your .env file."
-    try:
-        client = genai.Client()
-        response = client.models.generate_content(model=MODEL, contents=prompt)
-        return response.text or "The model returned an empty reply."
-    except Exception as e:
-        return f"Error calling Gemini: {e}"
+    """Send the prompt to Gemini and return the text reply."""
+    # TODO (Madalitso): read the key with os.getenv("GEMINI_API_KEY"), call the API
+    raise NotImplementedError
 
 
 def answer_question(question: str, collection) -> dict:
-    chunks = retrieve(question, collection)
-    if not chunks:
-        return {"answer": NOT_FOUND, "sources": []}
-    answer = call_llm(build_prompt(question, chunks))
-    if answer.startswith("Error"):
-        return {"answer": answer, "sources": []}
-    # If the model says it found nothing, don't list files that didn't help
-    if answer.strip().lower().startswith(NOT_FOUND.lower().rstrip(".")):
-        return {"answer": answer, "sources": []}
-    sources = sorted({c["source"] for c in chunks})
-    return {"answer": answer, "sources": sources}
+    """The main function the front end calls.
+
+    Return {"answer": "...", "sources": ["week1.pdf", "week3.pdf"]}
+    """
+    # TODO (Madalitso): retrieve -> build_prompt -> call_llm -> package the result
+    raise NotImplementedError
+
 
 # ===========================================================================
 # SECTION 4 - FRONT END (Streamlit)
@@ -162,28 +144,9 @@ def show_chat(collection):
 
 
 def show_sources(sources: list[str]):
-    """LANZI: show which documents the answer came from (e.g. in an expander).
-
-    `sources` is the "sources" list from answer_question(), for example
-    ["week1.pdf", "week3.pdf"]. Call this right after showing an answer.
-    """
-    # Clean the list: skip empty names and repeats (several retrieved chunks
-    # often come from the same file), but keep the order they came in.
-    unique_sources = []
-    for name in sources or []:
-        name = str(name).strip()
-        if name and name not in unique_sources:
-            unique_sources.append(name)
-
-    if not unique_sources:
-        st.caption("No sources: this answer did not come from the notes.")
-        return
-
-    label = "Source" if len(unique_sources) == 1 else "Sources"
-    with st.expander(f"📚 {label} ({len(unique_sources)})"):
-        st.caption("This answer was built from these files in the notes folder:")
-        for name in unique_sources:
-            st.markdown(f"- 📄 `{name}`")
+    """LANZI: show which documents the answer came from (e.g. in an expander)."""
+    # TODO (Lanzi)
+    pass
 
 
 def show_upload():
