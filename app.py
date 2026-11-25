@@ -168,6 +168,11 @@ def retrieve(question: str, collection, k: int = TOP_K) -> list[dict]:
 # ===========================================================================
 # SECTION 3 - MADALITSO: answer generation and wiring
 # ===========================================================================
+MODEL = "gemini-flash-latestht"
+
+NOT_FOUND = "I could not find this in the notes."
+
+
 def build_prompt(question: str, chunks: list[dict]) -> str:
     """Build the prompt: instructions + retrieved chunks + the question.
 
