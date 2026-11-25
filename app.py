@@ -34,36 +34,106 @@ TOP_K = 3                # how many chunks to retrieve per question
 
 
 # ===========================================================================
+# ===========================================================================
 # SECTION 1 - ACKSON: load, chunk, embed, store
 # ===========================================================================
+from pypdf import PdfReader
+
 def load_documents(folder: str) -> list[dict]:
-    """Read every .txt and .pdf file in `folder`.
+    """Read every .txt and .pdf file in `folder`."""
+    documents = []
 
-    Return a list like [{"source": "week1.pdf", "text": "full text..."}, ...]
-    Hint: use open() for .txt and the `pypdf` library for .pdf.
-    """
-    # TODO (Ackson)
-    raise NotImplementedError
+    # If folder doesn't exist, return empty list so app doesn't crash
+    if not os.path.isdir(folder):
+        print(f"Folder '{folder}' not found. Create it and add notes.")
+        return documents
 
+    for filename in sorted(os.listdir(folder)):
+        filepath = os.path.join(folder, filename)
+        if not os.path.isfile(filepath):
+            continue
+
+        text = ""
+
+        # --- .txt files ---
+        if filename.lower().endswith(".txt"):
+            with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
+                text = f.read()
+
+        # --- .pdf files ---
+        elif filename.lower().endswith(".pdf"):
+            reader = PdfReader(filepath)
+            pages = []
+            for page in reader.pages:
+                # extract_text() can return None for blank pages
+                page_text = page.extract_text() or ""
+                pages.append(page_text)
+            text = "\n".join(pages)
+
+        else:
+            continue  # skip other file types like .docx, .jpg
+
+        text = text.strip()
+        if text:  # only keep files that actually have text
+            documents.append({"source": filename, "text": text})
+
+    return documents
 
 def split_into_chunks(documents: list[dict]) -> list[dict]:
-    """Cut each document into pieces of CHUNK_SIZE characters, overlapping by CHUNK_OVERLAP.
+    """Cut each document into pieces of CHUNK_SIZE characters."""
+    chunks = []
 
-    Return [{"id": "week1.pdf-0", "source": "week1.pdf", "text": "..."}, ...]
-    """
-    # TODO (Ackson)
-    raise NotImplementedError
+    step = CHUNK_SIZE - CHUNK_OVERLAP  # 500 - 50 = 450, so we move 450 each time
 
+    for doc in documents:
+        source = doc["source"]
+        text = doc["text"]
+        chunk_number = 0
+
+        # Slide a window across the text
+        for start in range(0, len(text), step):
+            end = start + CHUNK_SIZE
+            piece = text[start:end].strip()
+
+            if not piece:
+                continue
+
+            chunks.append({
+                "id": f"{source}-{chunk_number}",
+                "source": source,
+                "text": piece,
+            })
+            chunk_number += 1
+
+            # Stop if we reached the end of the document
+            if end >= len(text):
+                break
+
+    return chunks
 
 def build_vector_store(chunks: list[dict]):
-    """Store the chunks in Chroma and return the collection.
+    """Store the chunks in Chroma and return the collection."""
+    client = chromadb.Client()
 
-    Hint: chromadb.Client().create_collection("notes") then collection.add(
-        ids=[...], documents=[...], metadatas=[{"source": ...}, ...]).
-    Chroma creates the embeddings for you with its built-in model.
-    """
-    # TODO (Ackson)
-    raise NotImplementedError
+    # Delete old collection if it exists, so we don't get duplicates
+    # when we re-run the app
+    try:
+        client.delete_collection("notes")
+    except Exception:
+        pass  # it didn't exist yet, that's fine
+
+    collection = client.create_collection("notes")
+
+    if not chunks:
+        print("No chunks to store. Add files to notes/ folder.")
+        return collection
+
+    collection.add(
+        ids=[c["id"] for c in chunks],
+        documents=[c["text"] for c in chunks],
+        metadatas=[{"source": c["source"]} for c in chunks],
+    )
+    return collection
 
 
 # ===========================================================================
