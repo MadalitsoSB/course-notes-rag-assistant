@@ -139,8 +139,47 @@ def show_chat(collection):
 
     Hint: st.text_input, st.button, st.chat_message. Call answer_question().
     """
-    # TODO (Wesley)
-    st.info("Chat screen goes here.")
+   
+    # Store conversation history between Streamlit reruns
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = []
+
+    # Question input
+    with st.form("chat_form"):
+        question = st.text_input(
+            "Ask a question about your course notes:",
+            placeholder="e.g. What is an operating system?"
+        )
+        submitted = st.form_submit_button("Ask")
+
+    # Process submitted question
+    if submitted:
+        if not question.strip():
+            st.warning("Please enter a question first.")
+        else:
+            st.session_state.chat_history.append({
+                "role": "user",
+                "content": question.strip()
+            })
+
+            try:
+                with st.spinner("Searching your course notes..."):
+                    result = answer_question(question.strip(), collection)
+
+                answer = result["answer"]
+
+                st.session_state.chat_history.append({
+                    "role": "assistant",
+                    "content": answer
+                })
+
+            except Exception as e:
+                st.error(f"Something went wrong: {e}")
+
+    # Display conversation
+    for message in st.session_state.chat_history:
+        with st.chat_message(message["role"]):
+            st.write(message["content"])
 
 
 def show_sources(sources: list[str]):
@@ -148,24 +187,28 @@ def show_sources(sources: list[str]):
     # TODO (Lanzi)
     pass
 
-
 def show_upload():
     """NATHAN N: let the user upload extra notes into the NOTES_FOLDER."""
-    # TODO (Nathan N): st.file_uploader, save to NOTES_FOLDER, then clear the cache
-    pass
+    uploads = st.file_uploader(
+        "Add .txt or .pdf notes", type=["txt", "pdf"], accept_multiple_files=True
+    )
+    if uploads and st.button("Add to notes"):
+        os.makedirs(NOTES_FOLDER, exist_ok=True)
+        for f in uploads:
+            with open(os.path.join(NOTES_FOLDER, f.name), "wb") as out:
+                out.write(f.getbuffer())
+        get_collection.clear()
+        st.success(f"Added {len(uploads)} file(s). The notes will reload on your next question.")
 
 
-# NATHAN N: also add error messages and a loading spinner (st.spinner)
-# around answer_question, e.g. inside show_chat (agree the details with Wesley).
+def answer_with_feedback(question: str, collection) -> dict:
+    """NATHAN N: spinner and friendly error message around answer_question."""
+    try:
+        with st.spinner("Searching the notes..."):
+            return answer_question(question, collection)
+    except Exception as e:
+        st.error(f"Something went wrong while answering: {e}")
+        return {"answer": "Sorry, I could not answer that. Please try again.", "sources": []}
 
 
-def main():
-    st.title("Course Notes Assistant")
-    st.caption("Ask a question. Answers come only from our notes.")
-    collection = get_collection()
-    show_chat(collection)
-    show_upload()
-
-
-if __name__ == "__main__":
-    main()
+, "sources": []}
