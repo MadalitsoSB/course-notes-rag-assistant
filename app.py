@@ -297,6 +297,3 @@ def answer_with_feedback(question: str, collection) -> dict:
     except Exception as e:
         st.error(f"Something went wrong while answering: {e}")
         return {"answer": "Sorry, I could not answer that. Please try again.", "sources": []}
-
-
-, "sources": []}
