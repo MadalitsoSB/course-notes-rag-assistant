@@ -21,7 +21,7 @@ import os
 import chromadb
 import streamlit as st
 from dotenv import load_dotenv
-
+from google import genai
 load_dotenv()  # reads the API key from .env (never commit .env to GitHub)
 
 # ---------------------------------------------------------------------------
@@ -297,3 +297,14 @@ def answer_with_feedback(question: str, collection) -> dict:
     except Exception as e:
         st.error(f"Something went wrong while answering: {e}")
         return {"answer": "Sorry, I could not answer that. Please try again.", "sources": []}
+
+def main():
+    st.title("Course Notes Assistant")
+    st.caption("Ask a question. Answers come only from our notes.")
+    collection = get_collection()
+    show_chat(collection)
+    show_upload()
+
+
+if __name__ == "__main__":
+    main()
